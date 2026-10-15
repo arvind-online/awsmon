@@ -14,10 +14,9 @@ A low-cost, secure, kiosk-style dashboard for the user's key AWS resources (ECS,
   - per-collector staleness, health-change log ("Recent changes")
   - startup-poll skip, session revocation, WebSocket limits
   - 31 server tests pass
-- **Next: Phase 2.** First build the collector plugin framework (DESIGN §17), then the real collectors.
-  - Use `GetMetricStatistics` by default (`aws.metricsApi: "statistics" | "data"`, see DESIGN §6). It counts toward the free tier.
-  - Keep the mock collector as a permanent, switchable "simulated" mode, and add an admin switch between live and simulated.
-  - **Blocked on the user:** real resource names (ECS cluster/services, Aurora cluster/instances, Lambda names, Kinesis streams, Redis replication group and nodes), and the AWS region. Ask for them at the start of Phase 2.
+- **Phase 2 step 1 (framework + Lambda collector): done and verified live** against ap-south-1 (matches `aws cloudwatch get-metric-statistics`). Framework: `server/src/collectors/` (`types.ts` ServiceCollector, `cloudwatch.ts` shared GetMetricStatistics reader, `live.ts` per-collector error isolation, `services/` one file per service). Live/simulated is the admin setting `dataSource` (data/settings.json); services without a real collector stay simulated and show a "simulated" pill. `npm run iam-policy` prints the policy.
+- **Next: Phase 2 remaining collectors, one per step:** Kinesis (adds DescribeStreamSummary), then ECS, Aurora, Redis, alarms. Each needs the real resource names from the user and its IAM actions added to the policy. Known follow-up: the cost estimate prices requests at the GetMetricData rate; with `metricsApi: "statistics"` they are free-tier eligible, so the widget overstates cost.
+- Dev AWS credentials: `~/.aws` default profile (user-approved for now; replaced by the read-only IAM user in Phase 3). Real Lambda in config.json: `java-kineis-to-Postgres-a301`.
 - **Later phases:**
   - Phase 3: read-only IAM user and policy, Windows service, Assigned Access kiosk, hardening. Measure real GPU/CPU cost of the ribbon on the kiosk PC.
   - Phase 4: notification skeleton (RuleEngine fed by the health-change log; Notifier calls the user's own email-service API; no SES/SNS).
