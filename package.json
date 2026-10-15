@@ -1,0 +1,22 @@
+{
+  "name": "aws-monitor",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": ["server", "web"],
+  "scripts": {
+    "init-config": "tsx scripts/init-config.ts",
+    "hash-password": "tsx scripts/hash-password.ts",
+    "dev:server": "npm run dev -w server",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build -w web && npm run build -w server",
+    "start": "npm run start -w server",
+    "test": "npm run test -w server",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w web"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "@types/node": "^24.0.0"
+  }
+}
