@@ -20,7 +20,7 @@ if (!config.auth.adminPasswordHash || config.auth.sessionSecret.length < 32) {
   console.warn('Admin UI disabled: set auth.adminPasswordHash and auth.sessionSecret (run `npm run init-config`).');
 }
 
-const settings = new SettingsService(config.dataDir, config.settings);
+const settings = new SettingsService(config.dataDir, { dataSource: config.mode === 'aws' ? 'live' : 'simulated', ...config.settings });
 const usage = new UsageTracker(config.dataDir);
 const monitor = new Monitor(createCollector(config), settings, usage, new EventLog(config.dataDir), config.dataDir);
 const scheduler = new Scheduler({ getSettings: () => settings.get(), poll: (t) => monitor.poll(t), initialLastPollAt: monitor.lastGoodAt() });

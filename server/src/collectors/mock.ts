@@ -1,6 +1,7 @@
 import type { Config } from '../config.js';
-import type { GroupType, Health, Item, Metric, Point, Unit } from '../../../shared/types.js';
-import { levelFor, worst } from '../health.js';
+import type { GroupType, Item, Point } from '../../../shared/types.js';
+import { worst } from '../health.js';
+import { item, metric } from './build.js';
 import type { CollectContext, CollectResult, CollectedGroup, Collector } from './types.js';
 
 const STEP_MS = 5 * 60_000;
@@ -48,22 +49,6 @@ function wave(id: string, w: Wave, now: number): Point[] {
     pts.push([t, Math.min(w.max ?? Infinity, Math.max(w.min ?? 0, v))]);
   }
   return pts;
-}
-
-function metric(
-  key: string,
-  label: string,
-  unit: Unit,
-  series: Point[],
-  opts: { warn?: number; crit?: number; bad?: 'high' | 'low' | 'none'; per?: string } = {},
-): Metric {
-  const latest = series.at(-1)?.[1] ?? null;
-  const bad = opts.bad ?? 'none';
-  return { key, label, unit, latest, series, warn: opts.warn, crit: opts.crit, bad, per: opts.per, health: levelFor(latest, opts.warn, opts.crit, bad) };
-}
-
-function item(id: string, name: string, subtitle: string | undefined, statusText: string, statusHealth: Health, metrics: Metric[]): Item {
-  return { id, name, subtitle, statusText, health: worst([statusHealth, ...metrics.map((m) => m.health)]), metrics };
 }
 
 const PER = '5 min';

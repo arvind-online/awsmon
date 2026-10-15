@@ -20,3 +20,31 @@ export interface CollectResult {
 export interface Collector {
   collect(ctx: CollectContext): Promise<CollectResult>;
 }
+
+/** What a service collector may use. One instance per poll, so the counters are per poll. */
+export interface ServiceContext extends CollectContext {
+  cw: MetricReader;
+}
+
+export interface MetricQuery {
+  namespace: string;
+  metricName: string;
+  dimensions: Record<string, string>;
+  stat: 'Sum' | 'Average' | 'Maximum' | 'Minimum';
+  /** Sum-type metrics have no datapoint when nothing happened; true fills those buckets with 0. */
+  fillZero?: boolean;
+}
+
+/** The shared CloudWatch layer: bounded concurrency, usage counting, 5-minute points over the last 3 hours. */
+export interface MetricReader {
+  series(q: MetricQuery): Promise<import('../../../shared/types.js').Point[]>;
+}
+
+/** A real (AWS-backed) collector for one dashboard group. Adding a service means adding one of these. */
+export interface ServiceCollector {
+  type: CollectedGroup['type'];
+  title: string;
+  /** IAM actions this collector needs, used to generate the least-privilege policy. */
+  iamActions: string[];
+  collect(ctx: ServiceContext): Promise<CollectedGroup>;
+}

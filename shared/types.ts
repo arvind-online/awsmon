@@ -8,6 +8,7 @@ export type PollTrigger = 'startup' | 'schedule' | 'manual' | 'escalation';
 export type ThemePref = 'light' | 'dark' | 'auto';
 export type BackgroundMode = 'waves' | 'static' | 'off';
 export type DisplayScale = 'desk' | 'wall' | 'tv';
+export type DataSource = 'live' | 'simulated';
 
 export type Point = [ts: number, value: number];
 
@@ -44,6 +45,8 @@ export interface Group {
   emptyNote?: string;
   /** Collector switched off in config (e.g. alarms before any exist). The UI hides its widget. */
   disabled?: boolean;
+  /** Placeholder data from the simulated collector, shown while live mode has no real collector for this service yet. */
+  simulated?: boolean;
   /** Last time this group's collector succeeded. Older than the poll implies its data is stale. */
   lastSuccessAt: number;
   /** Error from the most recent attempt; previous items are kept and shown as stale. */
@@ -113,6 +116,8 @@ export interface ScheduleSettings {
 }
 
 export interface Settings {
+  /** Where data comes from. Simulated needs no AWS access; live reads CloudWatch (and Describe APIs) read-only. */
+  dataSource: DataSource;
   schedule: ScheduleSettings;
   escalation: { enabled: boolean; intervalMin: number };
   manualRefresh: { cooldownSec: number; dailyCap: number };

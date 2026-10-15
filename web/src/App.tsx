@@ -182,7 +182,7 @@ function Dashboard() {
     const Body = BODIES[id as keyof typeof BODIES];
     const stale = g?.error ? `Collector failing: ${g.error}. Showing data from ${g.lastSuccessAt ? new Date(g.lastSuccessAt).toLocaleTimeString() : 'earlier'}.` : undefined;
     return (
-      <Widget title={TITLES[id] ?? id} icon={GROUP_ICON[id as Group['type']]} health={g?.error ? 'UNKNOWN' : g?.health} stale={stale} meta={g && g.items.length > 0 ? metaFor(g) : undefined} {...common}>
+      <Widget title={TITLES[id] ?? id} icon={GROUP_ICON[id as Group['type']]} health={g?.error ? 'UNKNOWN' : g?.health} stale={stale} simulated={g?.simulated} meta={g && g.items.length > 0 ? metaFor(g) : undefined} {...common}>
         {g ? <Body group={g} /> : <div className="skeleton" />}
       </Widget>
     );

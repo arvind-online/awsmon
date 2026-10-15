@@ -21,7 +21,14 @@ export const ConfigSchema = z.object({
       maxClients: z.number().int().min(1).max(1000).default(50),
     })
     .prefault({}),
-  aws: z.object({ region: z.string().default('ap-south-1'), profile: z.string().optional() }).prefault({}),
+  aws: z
+    .object({
+      region: z.string().default('ap-south-1'),
+      profile: z.string().optional(),
+      /** "statistics" = GetMetricStatistics (free tier eligible); "data" = batched GetMetricData (always billed). Only "statistics" is implemented. */
+      metricsApi: z.enum(['statistics', 'data']).default('statistics'),
+    })
+    .prefault({}),
   resources: z
     .object({
       ecs: z.array(z.object({ cluster: z.string(), services: stringList })).default([]),

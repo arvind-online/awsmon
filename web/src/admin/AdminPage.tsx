@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { projectMonthly } from '../../../shared/cost';
 import { DAYS } from '../../../shared/schedule';
-import type { BackgroundMode, Day, DisplayScale, Settings, ThemePref } from '../../../shared/types';
+import type { BackgroundMode, DataSource, Day, DisplayScale, Settings, ThemePref } from '../../../shared/types';
 import { ApiError, api, setCsrf } from '../api';
 import { Check, Logo } from '../components/Icons';
 import { WaveBackground } from '../components/WaveBackground';
@@ -44,6 +44,7 @@ interface Draft {
   kioskShowRefresh: boolean;
   cardOpacity: string;
   notificationsEnabled: boolean;
+  dataSource: DataSource;
 }
 
 const toDraft = (s: Settings): Draft => ({
@@ -73,6 +74,7 @@ const toDraft = (s: Settings): Draft => ({
   kioskShowRefresh: s.ui.kioskShowRefresh,
   cardOpacity: String(s.ui.cardOpacity),
   notificationsEnabled: s.notifications.enabled,
+  dataSource: s.dataSource,
 });
 
 const num = (s: string): number => (/^\d+(\.\d+)?$/.test(s.trim()) ? Number(s) : Number.NaN);
@@ -86,6 +88,7 @@ function fromDraft(d: Draft): { settings?: Settings; errors: Record<string, stri
     return v;
   };
   const settings: Settings = {
+    dataSource: d.dataSource,
     schedule: {
       timezone: d.timezone.trim() || 'local',
       workingDays: d.workingDays,
@@ -319,6 +322,15 @@ function Editor() {
   return (
     <form className="admin-grid" onSubmit={save}>
       <div className="admin-col">
+        <Section title="Data source" desc="Live reads your AWS account (read-only). Simulated generates realistic fake data and makes no AWS calls. Takes effect on the next poll.">
+          <Field label="Source" hint="Services without a live collector yet stay simulated and are labelled as such.">
+            <select value={draft.dataSource} onChange={(e) => set('dataSource', e.target.value as DataSource)}>
+              <option value="simulated">Simulated</option>
+              <option value="live">Live (AWS)</option>
+            </select>
+          </Field>
+        </Section>
+
         <Section title="Polling schedule" desc="Working hours poll more often; everything outside the window (including weekends) is treated as off hours automatically.">
           <Field label="Working hours: poll every" suffix="min" error={err('schedule.workingIntervalMin')} hint="Any whole number of minutes, e.g. 10 or 15.">
             <input inputMode="numeric" value={draft.workingIntervalMin} onChange={(e) => set('workingIntervalMin', e.target.value)} />

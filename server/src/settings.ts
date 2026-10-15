@@ -29,6 +29,7 @@ const timezone = z.string().refine((tz) => {
 
 export const SettingsSchema = z
   .object({
+    dataSource: z.enum(['live', 'simulated']),
     schedule: z.object({
       timezone,
       workingDays: z.array(z.enum(DAYS as [string, ...string[]])).max(7),
@@ -73,6 +74,7 @@ export const SettingsSchema = z
   });
 
 export const DEFAULT_SETTINGS: Settings = {
+  dataSource: 'simulated',
   schedule: {
     timezone: 'local',
     workingDays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
