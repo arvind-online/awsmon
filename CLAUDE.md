@@ -5,7 +5,7 @@ A low-cost, secure, kiosk-style dashboard for the user's key AWS resources (ECS,
 - **Design source of truth:** `docs/DESIGN.md`. Read sections 14 (phase plan), 16 (Phase 1.5 notes) and 17 (collector framework) first.
 - **Usage docs:** `README.md`.
 
-## Current status (as of 2026-10-14)
+## Current status (as of 2026-10-15)
 
 - **Phase 1 (scaffold, mock data): done.** Committed as the baseline.
 - **Phase 1.5 (UI and foundations): done, committed.** Includes:
@@ -20,7 +20,11 @@ A low-cost, secure, kiosk-style dashboard for the user's key AWS resources (ECS,
 - **Phase 2 step 4 (databases collector): done and verified live.** The user's DBs (`lmm-intellicar`, `rds-nemo-stage`) are standalone RDS PostgreSQL, not Aurora, so the `aurora` group (UI title "PostgreSQL databases") accepts instances without a `clusterId` and role `standalone`. Memory used % = 100 - FreeableMemory / `memoryGiB` (set per instance in config; the gauge is omitted when unset). Uses DescribeDBInstances. Also shows storage used % (FreeStorageSpace vs AllocatedStorage, standalone only; Aurora autoscales) with admin-editable thresholds `storageWarnPct`/`storageCritPct` (default 80/90).
 - **Phase 2 step 5 (Redis collector): done and verified live.** Replication group `lmm-intellicar-cluster` (cluster mode, 2 shards, nodes `-0001-001` and `-0002-001`); DescribeReplicationGroups + CloudWatch. The user also has `nemo-redis-stage` (not monitored; they did not ask for it).
 - **Cost widget fixed:** live polls are priced as GetMetricStatistics (1M free requests/month account-wide, then $0.01 per 1,000) and the footer shows the projected share of the free tier. Only live polls are recorded in `data/usage.json` (`CollectResult.live`); simulated polls are not. `metricsApi: "data"` is not implemented (the reader always uses statistics).
-- **Alarms collector: deferred to the next phase by the user.** Phase 2 is otherwise complete (ECS, PostgreSQL, Lambda, Kinesis, Redis all live). Next is Phase 3 (read-only IAM user and policy, Windows service, kiosk, hardening, measure ribbon cost on the kiosk PC). Each needs the real resource names from the user and its IAM actions added to the policy. Known follow-up: the cost estimate prices requests at the GetMetricData rate; with `metricsApi: "statistics"` they are free-tier eligible, so the widget overstates cost.
+- **Alarms collector: deferred to the next phase by the user.** Phase 2 is otherwise complete (ECS, PostgreSQL, Lambda, Kinesis, Redis all live). Next is Phase 3 (read-only IAM user and policy, Windows service, kiosk, hardening, measure ribbon cost on the kiosk PC).
+- **UI:** ECS (and other list widgets) now rotate healthy rows through pages with unhealthy rows pinned (see FitList in gotchas). Old simulated health events were cleared (backups in `data/*.bak-*`, git-ignored).
+- **Dev admin login:** user `admin`, password set to a weak dev value (`admin123`, user's choice) in the git-ignored `config.json`; change it before Phase 3 (`npm run hash-password` needs 12+ chars).
+- **Start/stop:** `npm run build && npm run dev:server` (foreground, :8080); background: `nohup npm run dev:server > /tmp/awsmon-dev.log 2>&1 &`; stop with `pkill -f "[t]sx watch"`. After a restart the startup poll is skipped if cached data is fresh, so trigger `POST /api/refresh` (or the Refresh button) to see new collector data.
+- **State at end of 2026-10-15 session:** all work committed and pushed to origin/main; 52 server tests pass. Not yet visually checked: rotating pages in light theme and in short widgets.
 - Dev AWS credentials: `~/.aws` default profile (user-approved for now; replaced by the read-only IAM user in Phase 3). Real Lambda in config.json: `java-kineis-to-Postgres-a301`.
 - **Later phases:**
   - Phase 3: read-only IAM user and policy, Windows service, Assigned Access kiosk, hardening. Measure real GPU/CPU cost of the ribbon on the kiosk PC.
