@@ -99,10 +99,10 @@ export class MockCollector implements Collector {
           metric('conns', 'Connections', 'count', wave(`${inst.id}:conns`, { base: 120, amp: 40, periodMin: 180, jitter: 10 }, now)),
         ];
         if (inst.role === 'reader') metrics.push(metric('lag', 'Replica lag', 'ms', wave(`${inst.id}:lag`, { base: 12, amp: 6, periodMin: 90, jitter: 4 }, now), { warn: 500, crit: 2000, bad: 'high' }));
-        auroraItems.push(item(inst.id, inst.id, `${inst.role} · ${memGiB} GiB · cluster ${c.clusterId}`, 'available', 'OK', metrics));
+        auroraItems.push(item(inst.id, inst.id, `${inst.role} · ${memGiB} GiB${c.clusterId ? ` · cluster ${c.clusterId}` : ''}`, 'available', 'OK', metrics));
       }
     }
-    groups.push(group('aurora', 'Aurora PostgreSQL', count(auroraItems), fail));
+    groups.push(group('aurora', 'PostgreSQL databases', count(auroraItems), fail));
 
     // Lambda
     const lambdaItems = count(

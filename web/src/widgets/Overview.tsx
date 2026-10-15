@@ -14,7 +14,7 @@ export const GROUP_ICON: Record<Group['type'], ReactNode> = {
   alarms: <Bell />,
 };
 
-const SHORT: Record<Group['type'], string> = { ecs: 'ECS', aurora: 'Aurora', lambda: 'Lambda', kinesis: 'Kinesis', redis: 'Redis', alarms: 'Alarms' };
+const SHORT: Record<Group['type'], string> = { ecs: 'ECS', aurora: 'Databases', lambda: 'Lambda', kinesis: 'Kinesis', redis: 'Redis', alarms: 'Alarms' };
 
 export function Overview({ snapshot }: { snapshot: Snapshot }) {
   const items = snapshot.groups.filter((g) => !g.disabled).flatMap((g) => g.items);

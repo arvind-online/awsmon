@@ -35,8 +35,9 @@ export const ConfigSchema = z.object({
       aurora: z
         .array(
           z.object({
-            clusterId: z.string(),
-            instances: z.array(z.object({ id: z.string(), role: z.enum(['writer', 'reader']).default('reader'), memoryGiB: z.number().positive().optional() })),
+            /** Aurora cluster the instances belong to. Leave out for standalone RDS instances. */
+            clusterId: z.string().optional(),
+            instances: z.array(z.object({ id: z.string(), role: z.enum(['writer', 'reader', 'standalone']).default('standalone'), memoryGiB: z.number().positive().optional() })),
           }),
         )
         .default([]),

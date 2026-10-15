@@ -31,7 +31,7 @@ const DEFAULTS: Cell[] = [
   { i: 'redis', x: 8, y: 12, w: 4, h: 8, minW: 3, minH: 3 },
   { i: 'alarms', x: 0, y: 20, w: 12, h: 3, minW: 3, minH: 2 },
 ];
-const TITLES: Record<string, string> = { overview: 'Overview', ecs: 'ECS services', aurora: 'Aurora PostgreSQL', lambda: 'Lambda', kinesis: 'Kinesis', redis: 'ElastiCache Redis', alarms: 'CloudWatch alarms' };
+const TITLES: Record<string, string> = { overview: 'Overview', ecs: 'ECS services', aurora: 'PostgreSQL databases', lambda: 'Lambda', kinesis: 'Kinesis', redis: 'ElastiCache Redis', alarms: 'CloudWatch alarms' };
 
 /** Take positions from a saved layout but min sizes from code; widgets missing from the save go to the bottom. */
 function normalize(saved: LayoutCell[] | null | undefined): Cell[] {
