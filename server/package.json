@@ -13,6 +13,7 @@
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.1152.0",
     "@aws-sdk/client-ecs": "^3.1152.0",
+    "@aws-sdk/client-elasticache": "^3.1152.0",
     "@aws-sdk/client-kinesis": "^3.1152.0",
     "@aws-sdk/client-rds": "^3.1152.0",
     "@fastify/cookie": "^11.1.3",
