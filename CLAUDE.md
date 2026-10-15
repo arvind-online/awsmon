@@ -7,8 +7,8 @@ A low-cost, secure, kiosk-style dashboard for the user's key AWS resources (ECS,
 
 ## Current status (as of 2026-10-14)
 
-- **Phase 1 (scaffold, mock data): done.** Staged in git as the baseline (not committed, see below).
-- **Phase 1.5 (UI and foundations): done, uncommitted.** Includes:
+- **Phase 1 (scaffold, mock data): done.** Committed as the baseline.
+- **Phase 1.5 (UI and foundations): done, committed.** Includes:
   - silk-ribbon background (Web Worker + OffscreenCanvas)
   - admin card opacity, display scale, kiosk mode (`/?display=kiosk`), shared server-side layout
   - per-collector staleness, health-change log ("Recent changes")
@@ -43,7 +43,7 @@ A low-cost, secure, kiosk-style dashboard for the user's key AWS resources (ECS,
   - Copy it to `C:\Users\Public\awsmon-shots\` and run it with `powershell.exe -File ... -SpecPath <spec.json>`.
   - Steps: `goto`, `wait`, `eval`, `shot`, `cdp` (raw CDP, e.g. `Input.dispatchMouseEvent`), `metrics` (Performance.getMetrics).
   - It cleans up its Edge process tree. Check that no `msedge` processes with `awsmon-edge-profile` linger afterwards.
-- **Git:** repo at `aws-monitor/`, branch `main`, no commits yet, and no git user.name/email configured. Ask the user to set them (or for permission) before committing. Commit messages end with the attribution line from the system reminder.
+- **Git:** repo at `aws-monitor/`, branch `main`, remote `origin` = https://github.com/arvind-online/awsmon.git (GitHub auth is set up; push works). Git identity is configured globally. Only `config.sample.json` is tracked; the real `config.json` holds secrets and is git-ignored. Commit messages end with the attribution line from the system reminder.
 
 ## Code map
 

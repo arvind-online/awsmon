@@ -12,6 +12,7 @@ Requires Node.js 22+ (a Node 24 LTS is installed at `~/.local/node` in this WSL;
 ```bash
 npm install
 npm run init-config      # writes config.json with a random admin password (printed once)
+                         # (config.json is git-ignored; see config.sample.json for the shape)
 npm run build            # builds web/dist
 npm start                # http://127.0.0.1:8080
 ```
