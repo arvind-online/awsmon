@@ -35,7 +35,7 @@ export class LiveCollector implements Collector {
     return {
       groups,
       metricsRequested: cw.requests,
-      apiCalls: cw.requests,
+      apiCalls: cw.requests + cw.otherCalls,
       simulated: groups.some((g) => g.simulated),
     };
   }

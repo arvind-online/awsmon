@@ -8,7 +8,12 @@ export const POINTS = 36; // 3 hours of 5-minute points
 const MAX_CONCURRENT = 6;
 
 export function createCloudWatchClient(cfg: Config): CloudWatchClient {
-  return new CloudWatchClient({ region: cfg.aws.region, profile: cfg.aws.profile, maxAttempts: 3 });
+  return new CloudWatchClient(awsClientConfig(cfg));
+}
+
+/** Shared settings for every read-only AWS client. */
+export function awsClientConfig(cfg: Config) {
+  return { region: cfg.aws.region, profile: cfg.aws.profile, maxAttempts: 3 };
 }
 
 /** Minimal slice of the SDK client, so tests can fake it. */
@@ -19,6 +24,7 @@ export interface CloudWatchLike {
 /** GetMetricStatistics reader (free-tier eligible). One instance per poll; counts requests for the cost estimate. */
 export class StatisticsReader implements MetricReader {
   requests = 0;
+  otherCalls = 0;
   private active = 0;
   private readonly waiting: (() => void)[] = [];
 
@@ -26,6 +32,10 @@ export class StatisticsReader implements MetricReader {
     private readonly client: CloudWatchLike,
     private readonly now: number,
   ) {}
+
+  countCall(n = 1): void {
+    this.otherCalls += n;
+  }
 
   async series(q: MetricQuery): Promise<Point[]> {
     await this.acquire();

@@ -37,6 +37,8 @@ export interface MetricQuery {
 
 /** The shared CloudWatch layer: bounded concurrency, usage counting, 5-minute points over the last 3 hours. */
 export interface MetricReader {
+  /** Count a non-metric AWS call (Describe/List are free) for the informational API-call total. */
+  countCall(n?: number): void;
   series(q: MetricQuery): Promise<import('../../../shared/types.js').Point[]>;
 }
 
