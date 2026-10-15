@@ -48,6 +48,8 @@ export const SettingsSchema = z
       cpuCritPct: z.number().min(1).max(100),
       memWarnPct: z.number().min(1).max(100),
       memCritPct: z.number().min(1).max(100),
+      storageWarnPct: z.number().min(1).max(100),
+      storageCritPct: z.number().min(1).max(100),
       iteratorAgeWarnMs: z.number().int().min(1000).max(86_400_000),
       iteratorAgeCritMs: z.number().int().min(1000).max(86_400_000),
     }),
@@ -69,6 +71,7 @@ export const SettingsSchema = z
     const t = s.thresholds;
     if (t.cpuWarnPct >= t.cpuCritPct) ctx.addIssue({ code: 'custom', path: ['thresholds', 'cpuWarnPct'], message: 'Warn must be below critical' });
     if (t.memWarnPct >= t.memCritPct) ctx.addIssue({ code: 'custom', path: ['thresholds', 'memWarnPct'], message: 'Warn must be below critical' });
+    if (t.storageWarnPct >= t.storageCritPct) ctx.addIssue({ code: 'custom', path: ['thresholds', 'storageWarnPct'], message: 'Warn must be below critical' });
     if (t.iteratorAgeWarnMs >= t.iteratorAgeCritMs) ctx.addIssue({ code: 'custom', path: ['thresholds', 'iteratorAgeWarnMs'], message: 'Warn must be below critical' });
     if (s.schedule.workingStart === s.schedule.workingEnd) ctx.addIssue({ code: 'custom', path: ['schedule', 'workingEnd'], message: 'Start and end must differ' });
   });
@@ -90,6 +93,8 @@ export const DEFAULT_SETTINGS: Settings = {
     cpuCritPct: 90,
     memWarnPct: 80,
     memCritPct: 90,
+    storageWarnPct: 80,
+    storageCritPct: 90,
     iteratorAgeWarnMs: 60_000,
     iteratorAgeCritMs: 300_000,
   },

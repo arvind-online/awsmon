@@ -103,6 +103,7 @@ export function AuroraBody({ group }: { group: Group }) {
       {group.items.map((it) => {
         const cpu = find(it, 'cpu');
         const mem = find(it, 'mem');
+        const disk = find(it, 'storage');
         return (
           <article className={`card card-${it.health.toLowerCase()}`} key={it.id}>
             <div className="card-head">
@@ -116,6 +117,7 @@ export function AuroraBody({ group }: { group: Group }) {
             <div className="card-gauges">
               {cpu && <Ring value={cpu.latest} health={cpu.health} label="CPU" size={78} />}
               {mem && <Ring value={mem.latest} health={mem.health} label="Memory" size={78} />}
+              {disk && <Ring value={disk.latest} health={disk.health} label="Storage" size={78} />}
               <div className="card-stats">
                 <Stat m={find(it, 'conns')} />
                 <Stat m={find(it, 'lag')} />

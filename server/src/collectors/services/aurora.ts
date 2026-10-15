@@ -12,6 +12,8 @@ export interface DbInstance {
   DBInstanceClass?: string;
   Engine?: string;
   EngineVersion?: string;
+  /** Allocated storage in GiB. */
+  AllocatedStorage?: number;
 }
 
 /** Minimal slice of the SDK client, so tests can fake it. */
@@ -31,6 +33,11 @@ export function memoryUsedPct(freeable: Metric['series'], memoryGiB: number): Me
   return freeable.map(([t, v]) => [t, Math.min(100, Math.max(0, 100 - (v / (memoryGiB * GIB)) * 100))]);
 }
 
+/** Storage used, from FreeStorageSpace and the allocated size. Aurora storage grows by itself and has no allocation to compare against. */
+export function storageUsedPct(free: Metric['series'], allocatedGiB: number): Metric['series'] {
+  return memoryUsedPct(free, allocatedGiB);
+}
+
 /** Covers Aurora clusters and standalone RDS PostgreSQL instances; both report under AWS/RDS by instance id. */
 export function auroraCollector(cfg: Config, client: RdsLike): ServiceCollector {
   return {
@@ -46,13 +53,14 @@ export function auroraCollector(cfg: Config, client: RdsLike): ServiceCollector 
             const dimensions = { DBInstanceIdentifier: inst.id };
             cw.countCall();
             const reader = inst.role === 'reader' && c.clusterId;
-            const [desc, cpu, free, conns, lag] = await Promise.all([
+            const [desc, cpu, free, storageFree, conns, lag] = await Promise.all([
               client.send(new DescribeDBInstancesCommand({ DBInstanceIdentifier: inst.id })).catch((e: unknown) => {
                 if ((e as Error).name === 'DBInstanceNotFoundFault') return { DBInstances: [] };
                 throw e;
               }),
               cw.series({ namespace: NS, metricName: 'CPUUtilization', dimensions, stat: 'Average' }),
               cw.series({ namespace: NS, metricName: 'FreeableMemory', dimensions, stat: 'Average' }),
+              c.clusterId ? Promise.resolve([]) : cw.series({ namespace: NS, metricName: 'FreeStorageSpace', dimensions, stat: 'Average' }),
               cw.series({ namespace: NS, metricName: 'DatabaseConnections', dimensions, stat: 'Average' }),
               reader ? cw.series({ namespace: NS, metricName: 'AuroraReplicaLag', dimensions, stat: 'Average' }) : Promise.resolve(null),
             ]);
@@ -66,6 +74,9 @@ export function auroraCollector(cfg: Config, client: RdsLike): ServiceCollector 
             ].filter(Boolean);
             const metrics = [metric('cpu', 'CPU', 'percent', cpu, { warn: t.cpuWarnPct, crit: t.cpuCritPct, bad: 'high' })];
             if (inst.memoryGiB) metrics.push(metric('mem', 'Memory used', 'percent', memoryUsedPct(free, inst.memoryGiB), { warn: t.memWarnPct, crit: t.memCritPct, bad: 'high' }));
+            if (d?.AllocatedStorage && !c.clusterId) {
+              metrics.push(metric('storage', 'Storage used', 'percent', storageUsedPct(storageFree, d.AllocatedStorage), { warn: t.storageWarnPct, crit: t.storageCritPct, bad: 'high' }));
+            }
             metrics.push(metric('conns', 'Connections', 'count', conns));
             if (lag) metrics.push(metric('lag', 'Replica lag', 'ms', lag, { warn: 500, crit: 2000, bad: 'high' }));
             return item(inst.id, inst.id, parts.join(' · ') || undefined, status, d ? dbHealth(status) : 'CRIT', metrics);

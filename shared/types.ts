@@ -126,6 +126,9 @@ export interface Settings {
     cpuCritPct: number;
     memWarnPct: number;
     memCritPct: number;
+    /** Database storage used (% of allocated). */
+    storageWarnPct: number;
+    storageCritPct: number;
     iteratorAgeWarnMs: number;
     iteratorAgeCritMs: number;
   };

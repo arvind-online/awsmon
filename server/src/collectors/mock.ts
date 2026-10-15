@@ -96,6 +96,7 @@ export class MockCollector implements Collector {
         const metrics = [
           metric('cpu', 'CPU', 'percent', wave(`${inst.id}:cpu`, { base: inst.role === 'writer' ? 34 : 18, amp: 14, periodMin: 110, jitter: 5, max: 100, spike: inst.role === 'writer' ? [240, 15, 35] : undefined }, now), { warn: t.cpuWarnPct, crit: t.cpuCritPct, bad: 'high' }),
           metric('mem', 'Memory used', 'percent', memUsedPct, { warn: t.memWarnPct, crit: t.memCritPct, bad: 'high' }),
+          metric('storage', 'Storage used', 'percent', wave(`${inst.id}:disk`, { base: 62, amp: 3, periodMin: 900, jitter: 0.3, max: 100 }, now), { warn: t.storageWarnPct, crit: t.storageCritPct, bad: 'high' }),
           metric('conns', 'Connections', 'count', wave(`${inst.id}:conns`, { base: 120, amp: 40, periodMin: 180, jitter: 10 }, now)),
         ];
         if (inst.role === 'reader') metrics.push(metric('lag', 'Replica lag', 'ms', wave(`${inst.id}:lag`, { base: 12, amp: 6, periodMin: 90, jitter: 4 }, now), { warn: 500, crit: 2000, bad: 'high' }));

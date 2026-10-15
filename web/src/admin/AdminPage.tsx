@@ -32,6 +32,8 @@ interface Draft {
   cpuCritPct: string;
   memWarnPct: string;
   memCritPct: string;
+  storageWarnPct: string;
+  storageCritPct: string;
   iterWarnSec: string;
   iterCritSec: string;
   defaultTheme: ThemePref;
@@ -62,6 +64,8 @@ const toDraft = (s: Settings): Draft => ({
   cpuCritPct: String(s.thresholds.cpuCritPct),
   memWarnPct: String(s.thresholds.memWarnPct),
   memCritPct: String(s.thresholds.memCritPct),
+  storageWarnPct: String(s.thresholds.storageWarnPct),
+  storageCritPct: String(s.thresholds.storageCritPct),
   iterWarnSec: String(s.thresholds.iteratorAgeWarnMs / 1000),
   iterCritSec: String(s.thresholds.iteratorAgeCritMs / 1000),
   defaultTheme: s.ui.defaultTheme,
@@ -104,6 +108,8 @@ function fromDraft(d: Draft): { settings?: Settings; errors: Record<string, stri
       cpuCritPct: n('cpuCritPct', 'thresholds.cpuCritPct', 'Value'),
       memWarnPct: n('memWarnPct', 'thresholds.memWarnPct', 'Value'),
       memCritPct: n('memCritPct', 'thresholds.memCritPct', 'Value'),
+      storageWarnPct: n('storageWarnPct', 'thresholds.storageWarnPct', 'Value'),
+      storageCritPct: n('storageCritPct', 'thresholds.storageCritPct', 'Value'),
       iteratorAgeWarnMs: Math.round(n('iterWarnSec', 'thresholds.iteratorAgeWarnMs', 'Value') * 1000),
       iteratorAgeCritMs: Math.round(n('iterCritSec', 'thresholds.iteratorAgeCritMs', 'Value') * 1000),
     },
@@ -413,6 +419,12 @@ function Editor() {
           </Field>
           <Field label="Memory critical" suffix="%" error={err('thresholds.memCritPct')}>
             <input inputMode="decimal" value={draft.memCritPct} onChange={(e) => set('memCritPct', e.target.value)} />
+          </Field>
+          <Field label="Database storage warn" suffix="%" error={err('thresholds.storageWarnPct')} hint="Share of allocated disk used. Storage cannot shrink, so warn early.">
+            <input inputMode="decimal" value={draft.storageWarnPct} onChange={(e) => set('storageWarnPct', e.target.value)} />
+          </Field>
+          <Field label="Database storage critical" suffix="%" error={err('thresholds.storageCritPct')}>
+            <input inputMode="decimal" value={draft.storageCritPct} onChange={(e) => set('storageCritPct', e.target.value)} />
           </Field>
           <Field label="Kinesis iterator age warn" suffix="sec" error={err('thresholds.iteratorAgeWarnMs')}>
             <input inputMode="decimal" value={draft.iterWarnSec} onChange={(e) => set('iterWarnSec', e.target.value)} />
