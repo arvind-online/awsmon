@@ -34,6 +34,7 @@ export class LiveCollector implements Collector {
     const groups = placeholders.groups.map((g) => real.get(g.type) ?? (g.disabled ? g : { ...g, simulated: true }));
     return {
       groups,
+      live: true,
       metricsRequested: cw.requests,
       apiCalls: cw.requests + cw.otherCalls,
       simulated: groups.some((g) => g.simulated),

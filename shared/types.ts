@@ -76,6 +76,10 @@ export interface LayoutCell {
 export interface CostInfo {
   actualMonthToDateUsd: number;
   projectedMonthlyUsd: number;
+  /** Share of the 1M monthly free GetMetricStatistics requests used so far, in percent. */
+  freeTierUsedPct: number;
+  /** Same, projected for the whole month from the schedule. */
+  projectedFreeTierPct: number;
   metricsRequestedMonth: number;
   apiCallsMonth: number;
   pollsMonth: number;

@@ -244,7 +244,7 @@ Notes:
 Shows what **running this dashboard** costs in AWS API charges. It is not the cost of monitored resources.
 
 - **Hidden by default:** shown as `$ ••••` with an eye icon, and clicking reveals the figures (default configurable via `ui.showCostByDefault`). Visibility is a client-side toggle.
-- **Actual (month-to-date):** the sum of metrics requested in `GetMetricData` calls so far this month × $0.01 per 1,000. A counter is persisted in `data/usage.json`, reset on month rollover. Other calls (`Describe*`, `DescribeAlarms`) are counted but priced at $0 (they are free).
+- **Actual (month-to-date):** the live `GetMetricStatistics` requests made so far this month, priced at $0.01 per 1,000 after the account-wide 1,000,000 free requests per month (so normally $0.00). Only live polls count; simulated polls are never recorded. The footer also shows the projected share of the free tier. A counter is persisted in `data/usage.json`, reset on month rollover. Other calls (`Describe*`, `DescribeAlarms`) are counted but priced at $0 (they are free).
 - **Projected (per month):** computed from the current schedule: polls per working day and per off-hours period × weekdays/weekends in a month × metrics per poll, plus an escalation allowance when enabled.
 - Both figures are cheap to implement because the poll path already knows the number of metrics requested. They are shown side by side: *Est. this month so far* and *Projected monthly*.
 - The Admin UI shows the projected figure live as schedule values are edited.

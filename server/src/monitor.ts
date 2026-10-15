@@ -90,7 +90,7 @@ export class Monitor extends EventEmitter<Events> {
       metricsRequested = res.metricsRequested;
       this.simulated = res.simulated;
       this.metricsPerPoll = res.metricsRequested;
-      this.usage.record(res.metricsRequested, res.apiCalls);
+      if (res.live) this.usage.record(res.metricsRequested, res.apiCalls);
     } catch (e) {
       error = (e as Error).message;
     }

@@ -161,7 +161,7 @@ export class MockCollector implements Collector {
       emptyNote: alarmsOn ? 'No alarms in ALARM state' : 'Not set up yet',
     });
 
-    return { groups, metricsRequested, apiCalls: 1 + this.cfg.resources.ecs.length + this.cfg.resources.aurora.length * 2 + this.cfg.resources.kinesis.length + this.cfg.resources.redis.length, simulated: true };
+    return { groups, metricsRequested, apiCalls: 1 + this.cfg.resources.ecs.length + this.cfg.resources.aurora.length * 2 + this.cfg.resources.kinesis.length + this.cfg.resources.redis.length, simulated: true, live: false };
   }
 }
 

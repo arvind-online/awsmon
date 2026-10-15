@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { writeJsonAtomic } from './fsutil.js';
-import { metricsToUsd, projectMonthly } from '../../shared/cost.js';
+import { freeTierPct, projectMonthly, requestsToUsd } from '../../shared/cost.js';
 import type { CostInfo, Settings } from '../../shared/types.js';
 
 interface UsageFile {
@@ -13,7 +13,7 @@ interface UsageFile {
 
 const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 
-/** Counts billable CloudWatch usage so the UI can show an actual month-to-date figure and a projection. */
+/** Counts real CloudWatch requests so the UI can show a month-to-date figure and a projection. Simulated polls are never recorded. */
 export class UsageTracker {
   private usage: UsageFile;
   private readonly file: string;
@@ -43,8 +43,10 @@ export class UsageTracker {
     this.rollover();
     const proj = projectMonthly(settings.schedule, metricsPerPoll, new Date(this.now()));
     return {
-      actualMonthToDateUsd: metricsToUsd(this.usage.metricsRequested),
+      actualMonthToDateUsd: requestsToUsd(this.usage.metricsRequested),
       projectedMonthlyUsd: proj.usd,
+      freeTierUsedPct: freeTierPct(this.usage.metricsRequested),
+      projectedFreeTierPct: proj.freeTierPct,
       metricsRequestedMonth: this.usage.metricsRequested,
       apiCallsMonth: this.usage.apiCalls,
       pollsMonth: this.usage.polls,

@@ -16,6 +16,10 @@ export function CostChip({ cost, shown, onToggle }: { cost: CostInfo | undefined
           <span>
             <b>{usd(cost.projectedMonthlyUsd)}</b>/mo projected
           </span>
+          <span className="sep" />
+          <span title="Live collectors use GetMetricStatistics, which shares a free allowance of 1,000,000 requests a month across your whole AWS account. This is only this dashboard's share (estimate).">
+            <b>{cost.projectedFreeTierPct < 1 ? '<1' : Math.round(cost.projectedFreeTierPct)}%</b> of free tier{cost.projectedFreeTierPct >= 100 ? ' (over)' : ''}
+          </span>
           {cost.simulated && <em>simulated</em>}
         </span>
       ) : (

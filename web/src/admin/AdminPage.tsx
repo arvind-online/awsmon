@@ -324,7 +324,7 @@ function Editor() {
     }
   };
 
-  const cheap = projection && projection.usd < 1;
+  const cheap = projection && projection.freeTierPct < 80;
   return (
     <form className="admin-grid" onSubmit={save}>
       <div className="admin-col">
@@ -398,7 +398,7 @@ function Editor() {
                 <span>/ month</span>
               </div>
               <p className="panel-desc">
-                {projection.pollsPerMonth.toLocaleString()} polls × {metricsPerPoll || '–'} metrics ≈ {projection.metricsPerMonth.toLocaleString()} metrics requested (CloudWatch GetMetricData, $0.01 per 1,000). Describe/List calls are free. Escalated polls are extra.
+                {projection.pollsPerMonth.toLocaleString()} polls × {metricsPerPoll || '–'} metrics ≈ {projection.metricsPerMonth.toLocaleString()} metric requests (CloudWatch GetMetricStatistics), about {projection.freeTierPct < 1 ? 'under 1' : Math.round(projection.freeTierPct)}% of the 1,000,000 free requests per month your AWS account gets. Beyond that it is $0.01 per 1,000. Describe/List calls are free. Escalated polls are extra. The free allowance is shared account-wide, so this is an estimate.
               </p>
               {draft.workingIntervalMin !== '' && Number(draft.workingIntervalMin) < 5 && <p className="form-error">Intervals under 5 minutes raise cost noticeably.</p>}
             </>

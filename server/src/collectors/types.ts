@@ -10,7 +10,9 @@ export type CollectedGroup = Omit<Group, 'lastSuccessAt'>;
 
 export interface CollectResult {
   groups: CollectedGroup[];
-  /** Metrics requested from GetMetricData this poll (the only billable call). */
+  /** True when the numbers above are real AWS calls. Simulated polls report what a live poll would cost, but must not be billed or recorded. */
+  live: boolean;
+  /** Metric requests made this poll (GetMetricStatistics: one per metric; the only billable call). */
   metricsRequested: number;
   /** Total API calls made (informational; Describe and List are free). */
   apiCalls: number;
