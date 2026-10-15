@@ -4,3 +4,6 @@ config.json
 **/data/*
 !data/.gitkeep
 *.log
+
+# Real config holds secrets; only config.sample.json is committed
+!config.sample.json

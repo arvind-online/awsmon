@@ -1,0 +1,83 @@
+{
+  "mode": "mock",
+  "server": {
+    "host": "127.0.0.1",
+    "port": 8080,
+    "allowedOrigins": [
+      "http://127.0.0.1:5173",
+      "http://localhost:5173"
+    ]
+  },
+  "aws": {
+    "region": "ap-south-1"
+  },
+  "resources": {
+    "ecs": [
+      {
+        "cluster": "prod",
+        "services": [
+          "api",
+          "worker",
+          "web",
+          "scheduler"
+        ]
+      }
+    ],
+    "aurora": [
+      {
+        "clusterId": "prod-aurora",
+        "instances": [
+          {
+            "id": "prod-aurora-1",
+            "role": "writer",
+            "memoryGiB": 16
+          },
+          {
+            "id": "prod-aurora-2",
+            "role": "reader",
+            "memoryGiB": 16
+          }
+        ]
+      }
+    ],
+    "lambda": [
+      {
+        "name": "ingest-fn"
+      },
+      {
+        "name": "transform-fn"
+      },
+      {
+        "name": "notify-fn"
+      }
+    ],
+    "kinesis": [
+      {
+        "stream": "events-stream"
+      },
+      {
+        "stream": "clickstream"
+      }
+    ],
+    "redis": [
+      {
+        "replicationGroupId": "prod-redis",
+        "nodes": [
+          "prod-redis-001",
+          "prod-redis-002"
+        ]
+      }
+    ]
+  },
+  "collectors": {
+    "alarms": {
+      "enabled": false,
+      "namePrefix": ""
+    }
+  },
+  "auth": {
+    "adminUser": "admin",
+    "adminPasswordHash": "<run: npm run init-config, or generate with scripts/hash-password.ts>",
+    "sessionSecret": "<random 64-char hex string>"
+  }
+}
