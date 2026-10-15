@@ -831,6 +831,40 @@ small.ink-crit {
 .fit-item {
   height: var(--row-h, auto);
   flex-shrink: 0;
+  animation: fit-in 0.4s ease both;
+}
+@keyframes fit-in {
+  from {
+    opacity: 0;
+  }
+}
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.pager button {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: var(--track);
+  cursor: pointer;
+  transition: width 0.3s, background 0.3s;
+}
+.pager button[aria-current='true'] {
+  width: 18px;
+  background: var(--text-2);
+}
+.pager small {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
 }
 .fit-item > .row {
   height: 100%;

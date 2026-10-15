@@ -67,3 +67,4 @@ A low-cost, secure, kiosk-style dashboard for the user's key AWS resources (ECS,
   - Display scale uses `transform: scale()` with react-grid-layout's `createScaledStrategy(scale)` **minus** its `calcDragPosition` (that function assumes the grid sits at the viewport origin).
   - In CSS, a base rule placed after a `@container` rule overrides it.
   - Never use `backdrop-filter` over the animated background.
+  - `FitList` never scrolls. When items overflow it rotates healthy items through even pages every 10 s (pauses on hover, off under reduced motion, dots clickable) and pins every non-OK item on every page; if pinned items alone fill the widget it falls back to a "+N more" row.
