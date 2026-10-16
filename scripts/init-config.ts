@@ -26,6 +26,7 @@ const config = {
     ],
     lambda: [{ name: 'ingest-fn' }, { name: 'transform-fn' }, { name: 'notify-fn' }],
     kinesis: [{ stream: 'events-stream' }, { stream: 'clickstream' }],
+    ec2: [{ instanceId: 'i-0123456789abcdef0', name: 'app-server' }],
     redis: [{ replicationGroupId: 'prod-redis', nodes: ['prod-redis-001', 'prod-redis-002'] }],
   },
   collectors: { alarms: { enabled: false, namePrefix: '' } },

@@ -2,7 +2,7 @@
 
 export type Health = 'OK' | 'WARN' | 'CRIT' | 'UNKNOWN';
 export type Unit = 'percent' | 'bytes' | 'count' | 'ms' | 'rate';
-export type GroupType = 'ecs' | 'aurora' | 'lambda' | 'kinesis' | 'redis' | 'alarms';
+export type GroupType = 'ecs' | 'aurora' | 'lambda' | 'kinesis' | 'redis' | 'ec2' | 'alarms';
 export type Day = 'Mon' | 'Tue' | 'Wed' | 'Thu' | 'Fri' | 'Sat' | 'Sun';
 export type PollTrigger = 'startup' | 'schedule' | 'manual' | 'escalation';
 export type ThemePref = 'light' | 'dark' | 'auto';
@@ -25,6 +25,8 @@ export interface Metric {
   health: Health;
   /** Aggregation window for summed metrics, e.g. "5 min" for "Invocations / 5 min". */
   per?: string;
+  /** Set when the metric has no source yet (e.g. needs the CloudWatch Agent). The UI shows this text instead of a value. */
+  placeholder?: string;
 }
 
 export interface Item {
@@ -63,6 +65,13 @@ export interface HealthEvent {
   from: Health;
   to: Health;
   note?: string;
+}
+
+/** 24-hour series for one card, returned by /api/history/:type for the detail view. */
+export interface GroupHistory {
+  hours: number;
+  generatedAt: number;
+  group: Group;
 }
 
 export interface LayoutCell {

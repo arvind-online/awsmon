@@ -14,6 +14,11 @@ export function metric(
   return { key, label, unit, latest, series, warn: opts.warn, crit: opts.crit, bad, per: opts.per, health: levelFor(latest, opts.warn, opts.crit, bad) };
 }
 
+/** A metric with no data source yet. Healthy by definition, so it never colours the item or the group. */
+export function placeholderMetric(key: string, label: string, unit: Unit, placeholder: string): Metric {
+  return { key, label, unit, latest: null, series: [], bad: 'none', health: 'OK', placeholder };
+}
+
 export function item(id: string, name: string, subtitle: string | undefined, statusText: string, statusHealth: Health, metrics: Metric[]): Item {
   return { id, name, subtitle, statusText, health: worst([statusHealth, ...metrics.map((m) => m.health)]), metrics };
 }

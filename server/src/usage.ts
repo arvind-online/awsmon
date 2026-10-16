@@ -31,11 +31,12 @@ export class UsageTracker {
     }
   }
 
-  record(metricsRequested: number, apiCalls: number): void {
+  /** `poll` is false for on-demand reads (the detail view), which cost requests but are not scheduled polls. */
+  record(metricsRequested: number, apiCalls: number, poll = true): void {
     this.rollover();
     this.usage.metricsRequested += metricsRequested;
     this.usage.apiCalls += apiCalls;
-    this.usage.polls += 1;
+    if (poll) this.usage.polls += 1;
     writeJsonAtomic(this.file, this.usage);
   }
 

@@ -1,3 +1,4 @@
+import type { GroupType } from '../../../shared/types.js';
 import type { Config } from '../config.js';
 import { createCloudWatchClient } from './cloudwatch.js';
 import { LiveCollector } from './live.js';
@@ -14,10 +15,18 @@ class SwitchingCollector implements Collector {
     private readonly mock: MockCollector,
   ) {}
 
-  collect(ctx: CollectContext): Promise<CollectResult> {
-    if (ctx.settings.dataSource !== 'live') return this.mock.collect(ctx);
+  private collector(ctx: CollectContext): Collector {
+    if (ctx.settings.dataSource !== 'live') return this.mock;
     this.live ??= new LiveCollector(createCloudWatchClient(this.cfg), serviceCollectors(this.cfg), this.mock);
-    return this.live.collect(ctx);
+    return this.live;
+  }
+
+  collect(ctx: CollectContext): Promise<CollectResult> {
+    return this.collector(ctx).collect(ctx);
+  }
+
+  collectGroup(type: GroupType, ctx: CollectContext): Promise<CollectResult> {
+    return this.collector(ctx).collectGroup(type, ctx);
   }
 }
 

@@ -59,6 +59,12 @@
         "stream": "clickstream"
       }
     ],
+    "ec2": [
+      {
+        "instanceId": "i-0123456789abcdef0",
+        "name": "app-server"
+      }
+    ],
     "redis": [
       {
         "replicationGroupId": "prod-redis",

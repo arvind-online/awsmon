@@ -1,11 +1,10 @@
 import type { Config } from '../config.js';
 import type { GroupType, Item, Point } from '../../../shared/types.js';
 import { worst } from '../health.js';
-import { item, metric } from './build.js';
+import { item, metric, placeholderMetric } from './build.js';
 import type { CollectContext, CollectResult, CollectedGroup, Collector } from './types.js';
 
 const STEP_MS = 5 * 60_000;
-const POINTS = 36; // 3 hours at 5-minute resolution, as GetMetricData would return
 
 /** Deterministic hash noise in [0,1). */
 function noise(seed: number, k: number): number {
@@ -32,12 +31,12 @@ interface Wave {
   spike?: [number, number, number];
 }
 
-function wave(id: string, w: Wave, now: number): Point[] {
+function waveSeries(id: string, w: Wave, now: number, points: number): Point[] {
   const seed = seedOf(id);
   const phase = noise(seed, 1) * Math.PI * 2;
   const end = Math.floor(now / STEP_MS) * STEP_MS;
   const pts: Point[] = [];
-  for (let i = POINTS - 1; i >= 0; i--) {
+  for (let i = points - 1; i >= 0; i--) {
     const t = end - i * STEP_MS;
     const minutes = t / 60_000;
     let v = w.base + w.amp * Math.sin((2 * Math.PI * minutes) / w.periodMin + phase) + (noise(seed, Math.floor(t / STEP_MS)) - 0.5) * 2 * w.jitter;
@@ -59,13 +58,19 @@ const failing = () => new Set((process.env.MOCK_FAIL ?? '').split(',').map((x) =
 export class MockCollector implements Collector {
   constructor(private readonly cfg: Config) {}
 
-  async collect({ now, settings }: CollectContext): Promise<CollectResult> {
+  async collectGroup(type: GroupType, ctx: CollectContext): Promise<CollectResult> {
+    const res = await this.collect(ctx);
+    return { ...res, groups: res.groups.filter((g) => g.type === type) };
+  }
+
+  async collect({ now, settings, hours = 3 }: CollectContext): Promise<CollectResult> {
+    const wave = (id: string, w: Wave, at: number) => waveSeries(id, w, at, hours * 12);
     const t = settings.thresholds;
     const groups: CollectedGroup[] = [];
     const fail = failing();
     let metricsRequested = 0;
     const count = (items: Item[]) => {
-      for (const i of items) metricsRequested += i.metrics.length;
+      for (const i of items) metricsRequested += i.metrics.filter((x) => !x.placeholder).length;
       return items;
     };
 
@@ -124,11 +129,14 @@ export class MockCollector implements Collector {
     const kinesisItems = count(
       this.cfg.resources.kinesis.map((k, i) => {
         const age = wave(`${k.stream}:age`, { base: 4000, amp: 2500, periodMin: 150, jitter: 1500, spike: i === 0 ? [180, 25, 90_000] : undefined }, now);
-        return item(k.stream, k.stream, 'stream', 'ACTIVE', 'OK', [
+        return item(k.stream, k.stream, `provisioned · ${2 + i} shards`, 'ACTIVE', 'OK', [
           metric('in', 'Incoming', 'count', wave(`${k.stream}:in`, { base: 1800 + i * 700, amp: 600, periodMin: 120, jitter: 150 }, now), { per: PER }),
           metric('out', 'Read', 'count', wave(`${k.stream}:out`, { base: 1790 + i * 700, amp: 590, periodMin: 120, jitter: 150 }, now), { per: PER }),
           metric('age', 'Iterator age', 'ms', age, { warn: t.iteratorAgeWarnMs, crit: t.iteratorAgeCritMs, bad: 'high' }),
           metric('thr', 'Write throttles', 'count', wave(`${k.stream}:thr`, { base: 0.2, amp: 0.15, periodMin: 200, jitter: 0.2 }, now), { warn: 1, crit: 10, bad: 'high', per: PER }),
+          metric('rbytes', 'Read data', 'percent', wave(`${k.stream}:rbytes`, { base: 38 + i * 30, amp: 14, periodMin: 120, jitter: 4, max: 100 }, now), { warn: 70, crit: 90, bad: 'high' }),
+          metric('rcalls', 'Read calls', 'percent', wave(`${k.stream}:rcalls`, { base: 25 + i * 20, amp: 9, periodMin: 90, jitter: 3, max: 100 }, now), { warn: 70, crit: 90, bad: 'high' }),
+          metric('rthr', 'Read throttles', 'count', wave(`${k.stream}:rthr`, { base: 0.1, amp: 0.1, periodMin: 200, jitter: 0.1 }, now), { warn: 1, crit: 10, bad: 'high', per: PER }),
         ]);
       }),
     );
@@ -149,6 +157,16 @@ export class MockCollector implements Collector {
       });
     }
     groups.push(group('redis', 'ElastiCache Redis', count(redisItems), fail));
+
+    // EC2: CPU is simulated; RAM and storage stay placeholders until the CloudWatch Agent is installed.
+    const ec2Items = this.cfg.resources.ec2.map((e, i) =>
+      item(e.instanceId, e.name ?? e.instanceId, e.name ? `t3.large · ${e.instanceId}` : 't3.large', 'running', 'OK', [
+        metric('cpu', 'CPU', 'percent', wave(`${e.instanceId}:cpu`, { base: 22 + i * 9, amp: 12, periodMin: 110, jitter: 5, max: 100 }, now), { warn: t.cpuWarnPct, crit: t.cpuCritPct, bad: 'high' }),
+        placeholderMetric('mem', 'RAM', 'percent', 'Needs CloudWatch Agent'),
+        placeholderMetric('disk', 'Storage', 'percent', 'Needs CloudWatch Agent'),
+      ]),
+    );
+    groups.push(ec2Items.length ? group('ec2', 'EC2 instances', count(ec2Items), fail) : { type: 'ec2', title: 'EC2 instances', health: 'OK', items: [], disabled: true, emptyNote: 'No instances configured' });
 
     // Alarms: provisioned, disabled until the collector is switched on.
     const alarmsOn = this.cfg.collectors.alarms.enabled;

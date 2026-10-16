@@ -23,6 +23,11 @@ export function formatValue(unit: Unit, v: number | null): string {
   }
 }
 
+/** "Fri 16:00": used on long time axes and tooltips where the day matters. */
+export function formatDayClock(ts: number): string {
+  return `${new Date(ts).toLocaleDateString([], { weekday: 'short' })} ${formatClock(ts)}`;
+}
+
 export function formatClock(ts: number): string {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }

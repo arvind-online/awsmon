@@ -42,6 +42,14 @@ describe('StatisticsReader', () => {
     expect(r.requests).toBe(1);
   });
 
+  it('covers 24 hours (288 points) when asked, in a single request', async () => {
+    const client = fakeClient(() => [{ Timestamp: new Date(END - STEP), Sum: 1 }]);
+    const r = new StatisticsReader(client, NOW, 24);
+    const s = await r.series({ namespace: 'AWS/Lambda', metricName: 'Errors', dimensions: { FunctionName: 'x' }, stat: 'Sum', fillZero: true });
+    expect(s).toHaveLength(288);
+    expect(r.requests).toBe(1);
+  });
+
   it('leaves gaps for averages (no zero fill)', async () => {
     const client = fakeClient(() => [{ Timestamp: new Date(END - STEP), Average: 120 }]);
     const s = await new StatisticsReader(client, NOW).series({ namespace: 'AWS/Lambda', metricName: 'Duration', dimensions: { FunctionName: 'x' }, stat: 'Average' });

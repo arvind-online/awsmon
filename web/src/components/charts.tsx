@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from 'react';
 import type { Metric, Point, Unit } from '../../../shared/types';
-import { formatClock, formatValue } from '../format';
+import { formatClock, formatDayClock, formatValue } from '../format';
 import { useChangeKey, useMorph } from '../hooks/anim';
 import { useSize, useTween } from '../hooks/misc';
 
@@ -47,6 +47,26 @@ function niceMax(v: number): number {
   const f = v / p;
   const nf = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
   return nf * p;
+}
+
+/** Axis maximum made of four equal, round steps (1, 2, 2.5, 5 x 10^n), so every gridline label is a clean number. */
+const MS_STEPS = [100, 200, 500, 1000, 2000, 5000, 10_000, 15_000, 30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000, 3_600_000];
+function quarterMax(v: number, unit?: Unit): number {
+  if (unit === 'ms') return 4 * (MS_STEPS.find((s) => s >= v / 4) ?? MS_STEPS.at(-1)!);
+  return 4 * niceMax(v / 4 || 0.25);
+}
+
+const HOUR_MS = 3_600_000;
+/** Round local-clock tick times (every 1, 2, 3, 4 or 6 hours) so a long axis reads 06:00 pm, 10:00 pm, ... instead of 05:40 pm, 09:39 pm. */
+function hourTicks(t0: number, t1: number): number[] {
+  const step = [1, 2, 3, 4, 6, 12].find((h) => (t1 - t0) / (h * HOUR_MS) <= 7) ?? 12;
+  const d = new Date(t0);
+  d.setMinutes(0, 0, 0);
+  const out: number[] = [];
+  for (let t = d.getTime(); t <= t1; t += HOUR_MS) {
+    if (t >= t0 && new Date(t).getHours() % step === 0) out.push(t);
+  }
+  return out;
 }
 
 export type SeriesDef = { label: string; points: Point[]; color: string };
@@ -145,29 +165,48 @@ export function Num({ value, unit }: { value: number | null; unit: Unit }) {
 
 const PAD = { l: 38, r: 10, t: 10, b: 20 };
 const PAD_COMPACT = { l: 2, r: 2, t: 6, b: 4 };
+const PAD_DETAILED = { l: 54, r: 16, t: 14, b: 30 };
 
 /** Responsive area/line chart: threshold lines, morphing updates, and a hover crosshair + tooltip. */
-export function AreaChart({ series, unit, warn, crit, bad = 'none', compact = false }: { series: SeriesDef[]; unit: Unit; warn?: number; crit?: number; bad?: Metric['bad']; compact?: boolean }) {
+export function AreaChart({
+  series,
+  unit,
+  warn,
+  crit,
+  bad = 'none',
+  compact = false,
+  detailed = false,
+}: {
+  series: SeriesDef[];
+  unit: Unit;
+  warn?: number;
+  crit?: number;
+  bad?: Metric['bad'];
+  compact?: boolean;
+  /** Full-size variant for the detail modal: 5 Y ticks, 7 X ticks with the day shown, and a day+time tooltip. */
+  detailed?: boolean;
+}) {
   const [ref, { w, h }] = useSize<HTMLDivElement>();
   const id = useId();
   const [hover, setHover] = useState<number | null>(null);
   const targets = useMemo(() => series.map((s) => s.points), [series]);
   const { frame, domain } = useMorph(targets);
-  const pad = compact ? PAD_COMPACT : PAD;
+  const pad = compact ? PAD_COMPACT : detailed ? PAD_DETAILED : PAD;
 
   const geo = useMemo(() => {
     const all = targets.flat();
     if (all.length === 0 || w < 40 || h < 24) return null;
     const dataMax = Math.max(...all.map((p) => p[1]));
     let max = unit === 'percent' ? Math.min(100, niceMax(Math.max(dataMax * 1.25, 10))) : niceMax(dataMax * 1.2 || 1);
+    if (detailed) max = unit === 'percent' ? Math.min(100, quarterMax(Math.max(dataMax * 1.15, 10))) : quarterMax(dataMax * 1.15 || 1, unit);
     if (bad === 'high' && warn !== undefined && warn > max && warn <= max * 1.4) max = niceMax(warn * 1.1);
     const iw = w - pad.l - pad.r;
     const ih = h - pad.t - pad.b;
     const y = (v: number) => pad.t + ih - (Math.min(v, max) / max) * ih;
     return { max, iw, ih, y };
-  }, [targets, w, h, unit, warn, bad, pad]);
+  }, [targets, w, h, unit, warn, bad, pad, detailed]);
 
-  if (!geo) return <div className="chart" ref={ref} />;
+  if (!geo) return <div className={`chart${detailed ? ' chart-detailed' : ''}`} ref={ref} />;
   const [t0, t1] = domain;
   const x = (t: number) => pad.l + ((t - t0) / (t1 - t0 || 1)) * geo.iw;
   const baseY = pad.t + geo.ih;
@@ -187,11 +226,14 @@ export function AreaChart({ series, unit, warn, crit, bad = 'none', compact = fa
     for (let i = 1; i < ref0.length; i++) if (Math.abs(ref0[i]![0] - t) < Math.abs(ref0[best]![0] - t)) best = i;
     setHover(best);
   };
-  const ticks = compact ? [] : [0, 0.5, 1].map((f) => f * geo.max);
+  const ticks = compact ? [] : (detailed ? [0, 0.25, 0.5, 0.75, 1] : [0, 0.5, 1]).map((f) => f * geo.max);
+  const xTicks = detailed ? hourTicks(t0, t1) : [t0, (t0 + t1) / 2, t1];
+  const xLabel = (t: number, i: number) => (detailed && (i === 0 || new Date(t).getHours() === 0) ? formatDayClock(t) : formatClock(t));
+  const anchor = (t: number) => (x(t) < pad.l + 36 ? 'start' : x(t) > w - pad.r - 36 ? 'end' : 'middle');
   const hoverTs = hover !== null ? ref0[hover]?.[0] : undefined;
 
   return (
-    <div className="chart" ref={ref} onPointerMove={onMove} onPointerLeave={() => setHover(null)}>
+    <div className={`chart${detailed ? ' chart-detailed' : ''}`} ref={ref} onPointerMove={onMove} onPointerLeave={() => setHover(null)}>
       <svg width={w} height={h} role="img" aria-label="Time series chart">
         <defs>
           {series.map((s, i) => (
@@ -213,10 +255,13 @@ export function AreaChart({ series, unit, warn, crit, bad = 'none', compact = fa
           </g>
         ))}
         {!compact &&
-          [t0, (t0 + t1) / 2, t1].map((t, i) => (
-            <text key={i} className="axis" x={x(t)} y={h - 4} textAnchor={i === 0 ? 'start' : i === 2 ? 'end' : 'middle'}>
-              {formatClock(t)}
-            </text>
+          xTicks.map((t, i) => (
+            <g key={i}>
+              {detailed && <line className="grid grid-v" x1={x(t)} x2={x(t)} y1={pad.t} y2={baseY} />}
+              <text className="axis" x={x(t)} y={h - (detailed ? 8 : 4)} textAnchor={detailed ? anchor(t) : i === 0 ? 'start' : i === xTicks.length - 1 ? 'end' : 'middle'}>
+                {xLabel(t, i)}
+              </text>
+            </g>
           ))}
         {bad === 'high' &&
           ([[warn, 'warn'], [crit, 'crit']] as const).map(([v, k]) =>
@@ -242,7 +287,7 @@ export function AreaChart({ series, unit, warn, crit, bad = 'none', compact = fa
       </svg>
       {hover !== null && hoverTs !== undefined && (
         <div className="tooltip" style={{ left: Math.min(Math.max(x(hoverTs), 70), w - 70), top: compact ? -48 : 6 }}>
-          <div className="tooltip-time">{formatClock(hoverTs)}</div>
+          <div className="tooltip-time">{detailed ? formatDayClock(hoverTs) : formatClock(hoverTs)}</div>
           {series.map((s, i) => (
             <div key={i} className="tooltip-row">
               <i style={{ background: s.color }} />

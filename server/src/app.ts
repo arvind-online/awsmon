@@ -8,6 +8,7 @@ import { z } from 'zod';
 import type { ServerMessage } from '../../shared/types.js';
 import { AuthState, LoginLimiter, SessionSigner, hashPassword, safeEqual, verifyPassword } from './auth.js';
 import type { Config } from './config.js';
+import { type HistoryService, isGroupType } from './history.js';
 import type { Hub } from './hub.js';
 import { type LayoutStore } from './layout.js';
 import type { Monitor } from './monitor.js';
@@ -24,6 +25,7 @@ export interface AppDeps {
   scheduler: Scheduler;
   hub: Hub;
   layout: LayoutStore;
+  history: HistoryService;
 }
 
 function findWebDist(): string | undefined {
@@ -31,7 +33,7 @@ function findWebDist(): string | undefined {
   return candidates.find((c): c is string => !!c && existsSync(resolve(c, 'index.html')));
 }
 
-export async function buildApp({ config, settings, monitor, scheduler, hub, layout }: AppDeps): Promise<FastifyInstance> {
+export async function buildApp({ config, settings, monitor, scheduler, hub, layout, history }: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({
     logger: { level: process.env.LOG_LEVEL ?? 'info', redact: ['req.headers.cookie', 'req.headers.authorization'] },
     bodyLimit: 16 * 1024,
@@ -91,6 +93,17 @@ export async function buildApp({ config, settings, monitor, scheduler, hub, layo
   app.post('/api/refresh', { preHandler: guardOrigin }, async (_req, reply) => {
     const res = await scheduler.refresh();
     return res.ok ? { ok: true } : reply.code(429).send(res);
+  });
+  // 24-hour series for one card's detail view. The card name is checked against a fixed list; the resources read are always the configured ones.
+  app.get<{ Params: { type: string } }>('/api/history/:type', async (req, reply) => {
+    const { type } = req.params;
+    if (!isGroupType(type)) return reply.code(404).send({ error: 'Unknown card' });
+    try {
+      return await history.get(type);
+    } catch (e) {
+      req.log.warn({ err: (e as Error).message, type }, 'history failed');
+      return reply.code(502).send({ error: 'Could not load history' });
+    }
   });
   app.get('/api/layout', async () => ({ layout: layout.get() }));
 

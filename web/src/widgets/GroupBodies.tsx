@@ -44,6 +44,15 @@ function Empty({ text, icon }: { text: string; icon?: React.ReactNode }) {
 
 function MetricBar({ m }: { m: Metric | undefined }) {
   if (!m) return <div />;
+  if (m.placeholder) {
+    return (
+      <div className="mbar mbar-placeholder" title={`${m.label}: ${m.placeholder}`}>
+        <Label m={m} />
+        <span className="mbar-value mbar-na">n/a</span>
+        <div className="bar bar-empty" />
+      </div>
+    );
+  }
   return (
     <div className="mbar">
       <Label m={m} />
@@ -67,9 +76,9 @@ function RowId({ it, sub }: { it: Item; sub?: string }) {
   );
 }
 
-function throttleNote(m: Metric | undefined): string | undefined {
-  if (!m || m.latest === null) return undefined;
-  return `Write throttles ${m.latest < 10 ? m.latest.toFixed(1) : Math.round(m.latest)}`;
+function throttleNote(write: Metric | undefined, read: Metric | undefined): string | undefined {
+  const fmt = (m: Metric | undefined, label: string) => (!m || m.latest === null ? undefined : `${label} ${m.latest < 10 ? m.latest.toFixed(1) : Math.round(m.latest)}`);
+  return [fmt(write, 'Write throttles'), fmt(read, 'Read throttles')].filter(Boolean).join(' · ') || undefined;
 }
 
 const listProps = { keyOf: (i: Item) => i.id, healthOf: (i: Item) => i.health };
@@ -186,7 +195,7 @@ export function KinesisBody({ group }: { group: Group }) {
               <Dot health={it.health} pulse />
               <div className="card-title">
                 <b>{it.name}</b>
-                <small>{it.statusText.toLowerCase()}</small>
+                <small>{[it.statusText.toLowerCase(), it.subtitle?.replace('provisioned · ', '')].filter(Boolean).join(' · ')}</small>
               </div>
               {age && (
                 <span className={`kin-head-lag${ink(age.health)}`} title="Consumer lag (iterator age)">
@@ -214,6 +223,12 @@ export function KinesisBody({ group }: { group: Group }) {
                 <AreaChart unit="ms" warn={age.warn} crit={age.crit} bad="high" series={[{ label: 'Iterator age', points: age.series, color: S1 }]} />
               </div>
             )}
+            {(find(it, 'rbytes') || find(it, 'rcalls')) && (
+              <div className="kin-cap">
+                <MetricBar m={find(it, 'rbytes')} />
+                <MetricBar m={find(it, 'rcalls')} />
+              </div>
+            )}
             {inc && out && (
               <div className="kin-flow">
                 <Sparkline
@@ -223,13 +238,44 @@ export function KinesisBody({ group }: { group: Group }) {
                     { points: out.series, color: S2 },
                   ]}
                 />
-                <Legend items={[{ label: 'Incoming', color: S1 }, { label: 'Read', color: S2 }]} caption={throttleNote(find(it, 'thr'))} />
+                <Legend items={[{ label: 'Incoming', color: S1 }, { label: 'Read', color: S2 }]} caption={throttleNote(find(it, 'thr'), find(it, 'rthr'))} />
               </div>
             )}
           </article>
         );
       })}
     </div>
+  );
+}
+
+/** Sparkline beside a bar; metrics without data yet (agent not installed, instance stopped) get a dashed flat line. */
+function Trend({ m, color }: { m: Metric | undefined; color: string }) {
+  return <div className="row-spark ec2-spark">{m && m.series.length > 0 ? <Sparkline points={m.series} color={color} /> : <div className="spark-empty" />}</div>;
+}
+
+/** EC2: CPU is live; RAM and Storage show placeholders until the CloudWatch Agent publishes them (same keys, so the card needs no change then). */
+export function Ec2Body({ group }: { group: Group }) {
+  if (group.items.length === 0) return <Empty text={group.emptyNote ?? 'No instances'} />;
+  return (
+    <FitList
+      {...listProps}
+      items={group.items}
+      minRow={42}
+      render={(it) => {
+        const cpu = find(it, 'cpu');
+        const mem = find(it, 'mem');
+        return (
+          <div className="row row-ec2">
+            <RowId it={it} sub={`${it.statusText}${it.subtitle ? ` · ${it.subtitle}` : ''}`} />
+            <MetricBar m={cpu} />
+            <Trend m={cpu} color={S1} />
+            <MetricBar m={mem} />
+            <Trend m={mem} color={S2} />
+            <MetricBar m={find(it, 'disk')} />
+          </div>
+        );
+      }}
+    />
   );
 }
 
@@ -278,4 +324,4 @@ export function AlarmsBody({ group }: { group: Group }) {
   );
 }
 
-export const BODIES = { ecs: EcsBody, aurora: AuroraBody, lambda: LambdaBody, kinesis: KinesisBody, redis: RedisBody, alarms: AlarmsBody } as const;
+export const BODIES = { ecs: EcsBody, aurora: AuroraBody, lambda: LambdaBody, kinesis: KinesisBody, redis: RedisBody, ec2: Ec2Body, alarms: AlarmsBody } as const;

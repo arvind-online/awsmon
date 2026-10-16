@@ -4,7 +4,8 @@ import type { Config } from '../config.js';
 import type { MetricQuery, MetricReader } from './types.js';
 
 export const PERIOD_S = 300;
-export const POINTS = 36; // 3 hours of 5-minute points
+export const DEFAULT_HOURS = 3;
+export const pointsFor = (hours: number) => Math.round((hours * 3600) / PERIOD_S);
 const MAX_CONCURRENT = 6;
 
 export function createCloudWatchClient(cfg: Config): CloudWatchClient {
@@ -31,6 +32,7 @@ export class StatisticsReader implements MetricReader {
   constructor(
     private readonly client: CloudWatchLike,
     private readonly now: number,
+    private readonly hours: number = DEFAULT_HOURS,
   ) {}
 
   countCall(n = 1): void {
@@ -44,7 +46,7 @@ export class StatisticsReader implements MetricReader {
       // End on the last completed 5-minute boundary so a half-filled bucket never shows as a dip.
       const stepMs = PERIOD_S * 1000;
       const end = Math.floor(this.now / stepMs) * stepMs;
-      const start = end - POINTS * stepMs;
+      const start = end - pointsFor(this.hours) * stepMs;
       const res = await this.client.send(
         new GetMetricStatisticsCommand({
           Namespace: q.namespace,

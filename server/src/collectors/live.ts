@@ -18,8 +18,17 @@ export class LiveCollector implements Collector {
     private readonly fallback: Collector,
   ) {}
 
+  /** One group only, for the detail view. A service without a real collector falls back to simulated data. */
+  async collectGroup(type: CollectedGroup['type'], ctx: CollectContext): Promise<CollectResult> {
+    const svc = this.services.find((s) => s.type === type);
+    if (!svc) return this.fallback.collectGroup(type, ctx);
+    const cw = new StatisticsReader(this.client, ctx.now, ctx.hours);
+    const group = await svc.collect({ ...ctx, cw });
+    return { groups: [group], live: true, metricsRequested: cw.requests, apiCalls: cw.requests + cw.otherCalls, simulated: false };
+  }
+
   async collect(ctx: CollectContext): Promise<CollectResult> {
-    const cw = new StatisticsReader(this.client, ctx.now);
+    const cw = new StatisticsReader(this.client, ctx.now, ctx.hours);
     const placeholders = await this.fallback.collect(ctx);
     const real = new Map<string, CollectedGroup>();
     await Promise.all(

@@ -3,6 +3,8 @@ import type { Group, Settings } from '../../../shared/types.js';
 export interface CollectContext {
   now: number;
   settings: Settings;
+  /** How much history each series covers, in hours (5-minute points). Defaults to 3; the detail view asks for 24. */
+  hours?: number;
 }
 
 /** A group as produced by a collector. Monitor stamps lastSuccessAt and merges failures with previous data. */
@@ -21,6 +23,8 @@ export interface CollectResult {
 
 export interface Collector {
   collect(ctx: CollectContext): Promise<CollectResult>;
+  /** Collect a single group (used for the 24-hour detail view). The result holds just that group. */
+  collectGroup(type: CollectedGroup['type'], ctx: CollectContext): Promise<CollectResult>;
 }
 
 /** What a service collector may use. One instance per poll, so the counters are per poll. */

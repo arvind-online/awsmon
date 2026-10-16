@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DisplayScale, Group, LayoutCell } from '../../shared/types';
 import { AdminPage } from './admin/AdminPage';
 import { api, setCsrf } from './api';
+import { DetailModal } from './components/DetailModal';
 import { CostChip, Footer, RecentChanges } from './components/Footer';
 import { Header } from './components/Header';
 import { Activity, Reset, X } from './components/Icons';
@@ -29,9 +30,10 @@ const DEFAULTS: Cell[] = [
   { i: 'lambda', x: 0, y: 12, w: 4, h: 8, minW: 3, minH: 3 },
   { i: 'kinesis', x: 4, y: 12, w: 4, h: 8, minW: 3, minH: 5 },
   { i: 'redis', x: 8, y: 12, w: 4, h: 8, minW: 3, minH: 3 },
-  { i: 'alarms', x: 0, y: 20, w: 12, h: 3, minW: 3, minH: 2 },
+  { i: 'ec2', x: 0, y: 20, w: 12, h: 10, minW: 3, minH: 3 },
+  { i: 'alarms', x: 0, y: 30, w: 12, h: 3, minW: 3, minH: 2 },
 ];
-const TITLES: Record<string, string> = { overview: 'Overview', ecs: 'ECS services', aurora: 'PostgreSQL databases', lambda: 'Lambda', kinesis: 'Kinesis', redis: 'ElastiCache Redis', alarms: 'CloudWatch alarms' };
+const TITLES: Record<string, string> = { overview: 'Overview', ecs: 'ECS services', aurora: 'PostgreSQL databases', lambda: 'Lambda', kinesis: 'Kinesis', redis: 'ElastiCache Redis', ec2: 'EC2 instances', alarms: 'CloudWatch alarms' };
 
 /** Take positions from a saved layout but min sizes from code; widgets missing from the save go to the bottom. */
 function normalize(saved: LayoutCell[] | null | undefined): Cell[] {
@@ -103,6 +105,7 @@ function Dashboard() {
   const layout = useMemo(() => normalize(local ?? serverLayout), [local, serverLayout]);
   const [hidden, setHidden] = useState<Set<string>>(() => new Set()); // intentionally not persisted: reload restores everything
   const [editing, setEditing] = useState(false);
+  const [expanded, setExpanded] = useState<Group['type'] | null>(null);
   const [costShown, setCostShown] = useState<boolean | null>(null);
   const [admin, setAdmin] = useState<{ signedIn: boolean } | null>(null);
   const { width, containerRef, mounted } = useContainerWidth();
@@ -171,6 +174,7 @@ function Dashboard() {
 
   const renderWidget = (id: string, index: number) => {
     const common = { editing: canEdit, canHide: !kiosk, index, onHide: () => hide(id) };
+    const expand = () => setExpanded(id as Group['type']);
     if (id === 'overview') {
       return (
         <Widget title="Overview" icon={<Activity />} bare {...common}>
@@ -182,7 +186,7 @@ function Dashboard() {
     const Body = BODIES[id as keyof typeof BODIES];
     const stale = g?.error ? `Collector failing: ${g.error}. Showing data from ${g.lastSuccessAt ? new Date(g.lastSuccessAt).toLocaleTimeString() : 'earlier'}.` : undefined;
     return (
-      <Widget title={TITLES[id] ?? id} icon={GROUP_ICON[id as Group['type']]} health={g?.error ? 'UNKNOWN' : g?.health} stale={stale} simulated={g?.simulated} meta={g && g.items.length > 0 ? metaFor(g) : undefined} {...common}>
+      <Widget title={TITLES[id] ?? id} icon={GROUP_ICON[id as Group['type']]} health={g?.error ? 'UNKNOWN' : g?.health} stale={stale} simulated={g?.simulated} meta={g && g.items.length > 0 ? metaFor(g) : undefined} onExpand={g ? expand : undefined} {...common}>
         {g ? <Body group={g} /> : <div className="skeleton" />}
       </Widget>
     );
@@ -272,6 +276,8 @@ function Dashboard() {
           <RecentChanges events={snapshot?.events ?? []} />
         </Footer>
       </div>
+
+      {expanded && <DetailModal type={expanded} title={TITLES[expanded] ?? expanded} icon={GROUP_ICON[expanded]} onClose={() => setExpanded(null)} />}
 
       {toast && (
         <div className="toast" role="alert">

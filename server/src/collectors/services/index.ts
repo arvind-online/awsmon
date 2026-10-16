@@ -1,3 +1,4 @@
+import { EC2Client } from '@aws-sdk/client-ec2';
 import { ECSClient } from '@aws-sdk/client-ecs';
 import { ElastiCacheClient } from '@aws-sdk/client-elasticache';
 import { KinesisClient } from '@aws-sdk/client-kinesis';
@@ -6,6 +7,7 @@ import type { Config } from '../../config.js';
 import { awsClientConfig } from '../cloudwatch.js';
 import type { ServiceCollector } from '../types.js';
 import { auroraCollector } from './aurora.js';
+import { ec2Collector } from './ec2.js';
 import { ecsCollector } from './ecs.js';
 import { kinesisCollector } from './kinesis.js';
 import { lambdaCollector } from './lambda.js';
@@ -20,5 +22,6 @@ export function serviceCollectors(cfg: Config): ServiceCollector[] {
     lambdaCollector(cfg),
     kinesisCollector(cfg, new KinesisClient(aws)),
     redisCollector(cfg, new ElastiCacheClient(aws)),
+    ec2Collector(cfg, new EC2Client(aws)),
   ];
 }

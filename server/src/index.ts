@@ -2,6 +2,7 @@ import { buildApp } from './app.js';
 import { createCollector } from './collectors/index.js';
 import { loadConfig } from './config.js';
 import { EventLog } from './events.js';
+import { HistoryService } from './history.js';
 import { Hub } from './hub.js';
 import { LayoutStore } from './layout.js';
 import { Monitor } from './monitor.js';
@@ -22,13 +23,15 @@ if (!config.auth.adminPasswordHash || config.auth.sessionSecret.length < 32) {
 
 const settings = new SettingsService(config.dataDir, { dataSource: config.mode === 'aws' ? 'live' : 'simulated', ...config.settings });
 const usage = new UsageTracker(config.dataDir);
-const monitor = new Monitor(createCollector(config), settings, usage, new EventLog(config.dataDir), config.dataDir);
+const collector = createCollector(config);
+const monitor = new Monitor(collector, settings, usage, new EventLog(config.dataDir), config.dataDir);
 const scheduler = new Scheduler({ getSettings: () => settings.get(), poll: (t) => monitor.poll(t), initialLastPollAt: monitor.lastGoodAt() });
 monitor.attach(scheduler);
 const hub = new Hub(config.server.maxClients);
 const layout = new LayoutStore(config.dataDir);
+const history = new HistoryService(collector, settings, usage);
 
-const app = await buildApp({ config, settings, monitor, scheduler, hub, layout });
+const app = await buildApp({ config, settings, monitor, scheduler, hub, layout, history });
 hub.start();
 await app.listen({ host: config.server.host, port: config.server.port });
 if (!scheduler.start()) {

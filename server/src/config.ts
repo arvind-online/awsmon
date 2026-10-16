@@ -43,6 +43,7 @@ export const ConfigSchema = z.object({
         .default([]),
       lambda: z.array(z.object({ name: z.string() })).default([]),
       kinesis: z.array(z.object({ stream: z.string() })).default([]),
+      ec2: z.array(z.object({ instanceId: z.string().regex(/^i-[0-9a-f]{8,17}$/), name: z.string().max(64).optional() })).default([]),
       redis: z.array(z.object({ replicationGroupId: z.string(), nodes: stringList })).default([]),
     })
     .prefault({}),

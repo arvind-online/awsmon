@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Health } from '../../../shared/types';
 import { useChangeKey } from '../hooks/anim';
-import { EyeOff, Grip } from './Icons';
+import { EyeOff, Expand, Grip } from './Icons';
 import { StatusBadge } from './StatusBadge';
 
 export interface WidgetProps {
@@ -19,11 +19,13 @@ export interface WidgetProps {
   bare?: boolean;
   index: number;
   onHide: () => void;
+  /** Opens the full-size detail view. Omitted for cards that have none (the overview). */
+  onExpand?: () => void;
   children: ReactNode;
 }
 
 /** Card frame shared by every dashboard component. The header is the drag handle in customize mode. */
-export function Widget({ title, icon, health, meta, stale, simulated, editing, canHide, bare, index, onHide, children }: WidgetProps) {
+export function Widget({ title, icon, health, meta, stale, simulated, editing, canHide, bare, index, onHide, onExpand, children }: WidgetProps) {
   const changed = useChangeKey(health);
   return (
     <section className={`widget${editing ? ' widget-editing' : ''}${health ? ` widget-${health.toLowerCase()}` : ''}${stale ? ' widget-stale' : ''}`} style={{ '--i': index } as React.CSSProperties}>
@@ -31,7 +33,15 @@ export function Widget({ title, icon, health, meta, stale, simulated, editing, c
       <header className={`widget-head${bare && !editing ? ' widget-head-bare' : ''}`}>
         {editing && <Grip className="grip" width={16} height={16} />}
         <span className="widget-icon">{icon}</span>
-        <h2>{title}</h2>
+        {onExpand && !editing ? (
+          <h2>
+            <button type="button" className="title-btn no-drag" onClick={onExpand} title={`Open ${title} in full view`}>
+              {title}
+            </button>
+          </h2>
+        ) : (
+          <h2>{title}</h2>
+        )}
         {health && <StatusBadge health={health} />}
         {stale && (
           <span className="stale-pill" title={stale}>
@@ -44,6 +54,11 @@ export function Widget({ title, icon, health, meta, stale, simulated, editing, c
           </span>
         )}
         <span className="widget-meta">{meta}</span>
+        {onExpand && !editing && (
+          <button className="icon-btn no-drag hide-btn expand-btn" onClick={onExpand} title={`Open ${title} in full view`} aria-label={`Open ${title} in full view`}>
+            <Expand width={15} height={15} />
+          </button>
+        )}
         {canHide && (
           <button className="icon-btn no-drag hide-btn" onClick={onHide} title={`Hide ${title} until next reload`} aria-label={`Hide ${title}`}>
             <EyeOff width={15} height={15} />
